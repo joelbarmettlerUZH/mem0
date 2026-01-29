@@ -202,6 +202,51 @@ client.search("preferences", filters={
 })
 ```
 
+## Understanding the score field
+
+Search results include a `score` field that indicates how closely a memory matches your query. **The interpretation of this score depends on your vector store configuration.**
+
+<Warning>
+  **Distance vs Similarity**: Vector stores use different metrics. Some return **similarity scores** (higher = better match), while others return **distance scores** (lower = better match). Mem0 passes through the raw score from your vector store without normalization.
+</Warning>
+
+### Distance-based metrics (lower score = better match)
+
+These vector stores return distance scores by default, where **0 is a perfect match** and higher values indicate less similarity:
+
+| Vector Store | Default Metric | Score Range |
+| --- | --- | --- |
+| **Milvus** | L2 (Euclidean distance) | 0 to unbounded |
+| **FAISS** | Euclidean distance | 0 to unbounded |
+| **Supabase** | Cosine distance | 0 to 2 |
+| **PGVector** | L2 distance | 0 to unbounded |
+| **ChromaDB** | L2 distance | 0 to unbounded |
+
+With these stores, a score of `0.05` is an **excellent match**, while a score of `1.5` indicates a **poor match**.
+
+### Similarity-based metrics (higher score = better match)
+
+These vector stores return similarity scores by default, where **1 is a perfect match**:
+
+| Vector Store | Default Metric | Score Range |
+| --- | --- | --- |
+| **Pinecone** | Cosine similarity | 0 to 1 |
+| **Qdrant** | Cosine similarity | -1 to 1 |
+| **Elasticsearch** | Cosine similarity | 0 to 1+ |
+
+With these stores, a score of `0.95` is an **excellent match**, while a score of `0.3` indicates a **poor match**.
+
+### Configuring your metric
+
+Most vector stores allow you to configure the distance/similarity metric. Check your vector store's configuration documentation:
+- [Milvus](/components/vectordbs/dbs/milvus) - Set `metric_type` to `COSINE`, `L2`, or `IP`
+- [FAISS](/components/vectordbs/dbs/faiss) - Set `metric_type` to `cosine`, `euclidean`, or `inner_product`
+- [Qdrant](/components/vectordbs/dbs/qdrant) - Set `distance` to `Cosine`, `Euclid`, or `Dot`
+
+<Tip>
+  If you want consistent "higher is better" scoring across different vector stores, consider enabling a **reranker**. Rerankers add a normalized `rerank_score` field that always uses higher values for better matches.
+</Tip>
+
 ## Tips for better search
 
 - **Use natural language**: Mem0 understands intent, so describe what you're looking for naturally
